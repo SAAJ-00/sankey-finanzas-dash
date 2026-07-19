@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sankey Finanzas Standalone</title>
+  <script src="./plotly.min.js"></script>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f3f6fb;
+      --surface: #ffffff;
+      --surface-muted: #f8fafc;
+      --border: #d7deea;
+      --text: #0f172a;
+      --text-soft: #475569;
+      --primary: #2563eb;
+      --primary-soft: #dbeafe;
+      --danger: #b42318;
+      --danger-soft: #fee4e2;
+      --success: #166534;
+      --success-soft: #dcfce7;
+      --warning-soft: #fff8e1;
+      --shadow: 0 18px 44px rgba(15, 23, 42, 0.08);
+      --radius: 18px;
+      font-family: "Segoe UI", Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: linear-gradient(180deg, #eef4ff 0%, var(--bg) 220px);
+      color: var(--text);
+    }
+
+    .page {
+      width: min(1380px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 36px;
+    }
+
+    .hero,
+    .panel {
+      background: var(--surface);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      margin: 0 0 10px;
+      font-size: clamp(1.7rem, 3vw, 2.4rem);
+    }
+
+    .hero p {
+      margin: 0;
+      color: var(--text-soft);
+      line-height: 1.6;
+      max-width: 920px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin: 18px 0 0;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .button-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+    }
+
+    .button-secondary {
+      background: var(--surface-muted);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin: 20px 0;
+    }
+
+    .summary-card {
+      padding: 18px;
+      border-radius: 16px;
+      background: var(--surface);
+      border: 1px solid rgba(148, 163, 184, 0.18);
+      box-shadow: var(--shadow);
+    }
+
+    .summary-card .label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-soft);
+      font-size: 0.94rem;
+    }
+
+    .summary-card .value {
+      font-size: clamp(1.45rem, 2.5vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .summary-card.success {
+      background: linear-gradient(135deg, #f2fff6 0%, #dcfce7 100%);
+    }
+
+    .summary-card.warning {
+      background: linear-gradient(135deg, #fffdf5 0%, #fff8e1 100%);
+    }
+
+    .summary-card.info {
+      background: linear-gradient(135deg, #f3f8ff 0%, #dbeafe 100%);
+    }
+
+    .feedback {
+      margin-bottom: 18px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      border: 1px solid transparent;
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      color: var(--text-soft);
+      background: var(--surface);
+    }
+
+    .feedback.error {
+      color: var(--danger);
+      background: var(--danger-soft);
+      border-color: rgba(180, 35, 24, 0.14);
+    }
+
+    .feedback.success {
+      color: var(--success);
+      background: var(--success-soft);
+      border-color: rgba(22, 101, 52, 0.14);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 560px) minmax(320px, 1fr);
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      padding: 20px;
+    }
+
+    .panel h2 {
+      margin: 0 0 8px;
+      font-size: 1.1rem;
+    }
+
+    .panel p {
+      margin: 0 0 16px;
+      color: var(--text-soft);
+      line-height: 1.5;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: var(--surface-muted);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 520px;
+    }
+
+    th,
+    td {
+      padding: 12px 14px;
+      text-align: left;
+      border-bottom: 1px solid #e7edf6;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #eef2f7;
+      font-size: 0.94rem;
+    }
+
+    tbody tr:last-child td {
+      border-bottom: 0;
+    }
+
+    tbody tr.editable-income td.amount-cell,
+    tbody tr.editable-expense td.amount-cell {
+      background: var(--warning-soft);
+    }
+
+    tbody tr.structural td {
+      background: #eef2f7;
+      color: var(--text-soft);
+      font-weight: 600;
+    }
+
+    tbody tr.structural.utility td {
+      background: var(--success-soft);
+      color: var(--success);
+    }
+
+    tbody tr.invalid td {
+      background: #fff5f5;
+    }
+
+    .field {
+      width: 100%;
+      border: 1px solid #d0d8e5;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--text);
+      background: #fff;
+    }
+
+    .field:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.14);
+      border-color: var(--primary);
+    }
+
+    .field[disabled] {
+      cursor: not-allowed;
+      color: var(--text-soft);
+      background: transparent;
+      border-color: transparent;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .delete-button {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: #b91c1c;
+      color: #fff;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: none;
+    }
+
+    .delete-button[disabled] {
+      opacity: 0.35;
+      cursor: default;
+    }
+
+    #sankey-chart {
+      width: 100%;
+      min-height: 700px;
+    }
+
+    .footnote {
+      margin-top: 16px;
+      font-size: 0.9rem;
+      color: var(--text-soft);
+    }
+
+    @media (max-width: 1080px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      #sankey-chart {
+        min-height: 620px;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .page {
+        width: min(100% - 20px, 1380px);
+        padding-top: 18px;
+      }
+
+      .hero,
+      .panel,
+      .summary-card {
+        border-radius: 16px;
+      }
+
+      .hero,
+      .panel {
+        padding: 18px;
+      }
+
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+
+      button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>Dashboard Sankey de ingresos y gastos</h1>
+      <p>
+        Versión HTML/JavaScript standalone. Abre este archivo en tu navegador para editar partidas,
+        agregar o eliminar filas y ver el gráfico Sankey actualizado en tiempo real sin usar servidor.
+      </p>
+      <div class="toolbar">
+        <button id="add-income-item" class="button-primary" type="button">Agregar item de ingreso</button>
+        <button id="add-expense-item" class="button-secondary" type="button">Agregar item de gasto</button>
+      </div>
+    </section>
+
+    <section class="summary-grid" aria-label="Resumen financiero">
+      <article class="summary-card info">
+        <span class="label">Ingresos totales</span>
+        <strong id="summary-ingresos" class="value">$0</strong>
+      </article>
+      <article class="summary-card warning">
+        <span class="label">Gastos totales</span>
+        <strong id="summary-gastos" class="value">$0</strong>
+      </article>
+      <article class="summary-card success">
+        <span class="label">Utilidad neta</span>
+        <strong id="summary-utilidad" class="value">$0</strong>
+      </article>
+    </section>
+
+    <section id="validation-message" class="feedback" role="status" aria-live="polite">
+      Cargando datos por defecto…
+    </section>
+
+    <section class="layout">
+      <article class="panel">
+        <h2>Tabla editable</h2>
+        <p>
+          Puedes editar etiquetas y montos en las filas editables. Los totales estructurales se recalculan automáticamente.
+        </p>
+        <div class="table-wrap">
+          <table aria-label="Tabla de flujos">
+            <thead>
+              <tr>
+                <th>origen</th>
+                <th>destino</th>
+                <th>monto_clp</th>
+                <th aria-label="Eliminar"></th>
+              </tr>
+            </thead>
+            <tbody id="flow-table-body"></tbody>
+          </table>
+        </div>
+        <p class="footnote">
+          Validaciones activas: montos positivos, al menos un gasto, ingresos mayores a cero y utilidad neta no negativa.
+        </p>
+      </article>
+
+      <article class="panel">
+        <h2>Gráfico Sankey</h2>
+        <p>
+          El flujo se actualiza con los mismos datos base de la app Dash y replica sus reglas de cálculo en JavaScript.
+        </p>
+        <div id="sankey-chart"></div>
+      </article>
+    </section>
+  </main>
+
+  <script>
+    const INGRESOS_LABEL = "ingresos_totales";
+    const GASTOS_LABEL = "gastos_totales";
+    const UTILIDAD_LABEL = "utilidad_neta";
+    const DEFAULT_EDITABLE_ROWS = [
+      { origen: "ventas_productos", destino: INGRESOS_LABEL, monto_clp: "4200000" },
+      { origen: "comisiones_mercadolibre", destino: INGRESOS_LABEL, monto_clp: "50000" },
+      { origen: GASTOS_LABEL, destino: "compra_insumos", monto_clp: "2100000" },
+      { origen: GASTOS_LABEL, destino: "arriendo_local", monto_clp: "500000" },
+      { origen: GASTOS_LABEL, destino: "gastos_luz_agua", monto_clp: "80000" },
+      { origen: GASTOS_LABEL, destino: "mobiliario", monto_clp: "120000" },
+      { origen: GASTOS_LABEL, destino: "seguro_robos_incendio", monto_clp: "150000" },
+      { origen: GASTOS_LABEL, destino: "publicidad", monto_clp: "100000" }
+    ];
+
+    const state = {
+      rows: DEFAULT_EDITABLE_ROWS.map((row) => ({ ...row }))
+    };
+
+    const tableBody = document.getElementById("flow-table-body");
+    const validationMessage = document.getElementById("validation-message");
+    const summaryIngresos = document.getElementById("summary-ingresos");
+    const summaryGastos = document.getElementById("summary-gastos");
+    const summaryUtilidad = document.getElementById("summary-utilidad");
+    const sankeyChart = document.getElementById("sankey-chart");
+
+    function normalizeLabel(label) {
+      return String(label ?? "").trim().toLowerCase().replace(/\s+/g, "_");
+    }
+
+    function escapeAttribute(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function parseAmount(value) {
+      if (typeof value === "number") {
+        return Number.isFinite(value) ? value : NaN;
+      }
+
+      const cleaned = String(value ?? "")
+        .trim()
+        .replace(/[^\d.-]/g, "");
+      return cleaned ? Number(cleaned) : NaN;
+    }
+
+    function formatCurrency(value) {
+      return `$${new Intl.NumberFormat("es-CL", { maximumFractionDigits: 0 }).format(Math.round(value || 0))}`;
+    }
+
+    function classifyRow(row) {
+      const source = normalizeLabel(row.origen);
+      const target = normalizeLabel(row.destino);
+
+      if (target === INGRESOS_LABEL) {
+        return "income";
+      }
+
+      if ((source === GASTOS_LABEL && target !== UTILIDAD_LABEL) || (target === GASTOS_LABEL && source !== INGRESOS_LABEL)) {
+        return "expense";
+      }
+
+      return "other";
+    }
+
+    function classifyEditableRows(rows) {
+      const incomeRows = [];
+      const expenseRows = [];
+      const otherRows = [];
+
+      rows.forEach((row, index) => {
+        const rowType = classifyRow(row);
+        const enriched = { ...row, rowType, stateIndex: index };
+        if (rowType === "income") {
+          incomeRows.push(enriched);
+        } else if (rowType === "expense") {
+          expenseRows.push(enriched);
+        } else {
+          otherRows.push(enriched);
+        }
+      });
+
+      return { incomeRows, expenseRows, otherRows };
+    }
+
+    function prepareModel(rows) {
+      const { incomeRows, expenseRows, otherRows } = classifyEditableRows(rows);
+
+      rows.forEach((row, index) => {
+        if (!String(row.origen ?? "").trim() || !String(row.destino ?? "").trim()) {
+          throw new Error(`Las filas editables deben tener origen y destino. Fila inválida: ${index + 1}.`);
+        }
+      });
+
+      if (otherRows.length > 0) {
+        const invalidRows = otherRows.map((row) => row.stateIndex + 1).join(", ");
+        throw new Error(
+          `Cada fila editable debe apuntar a ${INGRESOS_LABEL} o ${GASTOS_LABEL}. Filas inválidas: ${invalidRows}.`
+        );
+      }
+
+      const invalidAmountRows = [];
+      const nonPositiveRows = [];
+
+      rows.forEach((row, index) => {
+        const amount = parseAmount(row.monto_clp);
+        if (!Number.isFinite(amount)) {
+          invalidAmountRows.push(index + 1);
+        } else if (amount <= 0) {
+          nonPositiveRows.push(index + 1);
+        }
+      });
+
+      if (invalidAmountRows.length > 0) {
+        throw new Error(`Hay valores no numéricos en filas editables: ${invalidAmountRows.join(", ")}.`);
+      }
+
+      if (nonPositiveRows.length > 0) {
+        throw new Error(`Los montos editables deben ser mayores que 0. Filas inválidas: ${nonPositiveRows.join(", ")}.`);
+      }
+
+      const totalIngresos = incomeRows.reduce((sum, row) => sum + parseAmount(row.monto_clp), 0);
+      const totalGastos = expenseRows.reduce((sum, row) => sum + parseAmount(row.monto_clp), 0);
+
+      if (totalIngresos <= 0) {
+        throw new Error("La suma de los ingresos editables debe ser mayor que 0.");
+      }
+
+      if (expenseRows.length === 0) {
+        throw new Error(`Debe existir al menos una fila editable de gasto con ${GASTOS_LABEL}.`);
+      }
+
+      const utilidad = totalIngresos - totalGastos;
+      if (utilidad < 0) {
+        throw new Error(
+          `La utilidad_neta calculada no puede ser negativa. Ingresos: ${formatCurrency(totalIngresos)}. Gastos: ${formatCurrency(totalGastos)}.`
+        );
+      }
+
+      const sankeyRows = [];
+      incomeRows.forEach((row) => {
+        sankeyRows.push({
+          source: String(row.origen).trim(),
+          target: INGRESOS_LABEL,
+          value: parseAmount(row.monto_clp)
+        });
+      });
+
+      expenseRows.forEach((row) => {
+        const source = String(row.origen).trim();
+        const target = String(row.destino).trim();
+        const expenseLabel = normalizeLabel(source) === GASTOS_LABEL ? target : source;
+        const value = parseAmount(row.monto_clp);
+        sankeyRows.push({ source: INGRESOS_LABEL, target: expenseLabel, value });
+        sankeyRows.push({ source: expenseLabel, target: GASTOS_LABEL, value });
+      });
+
+      sankeyRows.push({ source: INGRESOS_LABEL, target: UTILIDAD_LABEL, value: utilidad });
+
+      const displayRows = [
+        ...incomeRows,
+        {
+          origen: INGRESOS_LABEL,
+          destino: GASTOS_LABEL,
+          monto_clp: totalGastos,
+          rowType: "structural-total",
+          stateIndex: null
+        },
+        ...expenseRows,
+        ...otherRows,
+        {
+          origen: GASTOS_LABEL,
+          destino: UTILIDAD_LABEL,
+          monto_clp: utilidad,
+          rowType: "structural-utility",
+          stateIndex: null
+        }
+      ];
+
+      return { incomeRows, expenseRows, otherRows, totalIngresos, totalGastos, utilidad, sankeyRows, displayRows };
+    }
+
+    function buildErrorFigure(message) {
+      return {
+        data: [],
+        layout: {
+          height: 700,
+          xaxis: { visible: false },
+          yaxis: { visible: false },
+          paper_bgcolor: "#ffffff",
+          plot_bgcolor: "#ffffff",
+          margin: { l: 24, r: 24, t: 36, b: 24 },
+          annotations: [
+            {
+              x: 0.5,
+              y: 0.5,
+              xref: "paper",
+              yref: "paper",
+              showarrow: false,
+              text: message,
+              font: { size: 16, color: "#b42318" }
+            }
+          ]
+        }
+      };
+    }
+
+    function buildSankeyFigure(model) {
+      const groupedLinks = new Map();
+      model.sankeyRows.forEach((row) => {
+        const key = `${row.source}|||${row.target}`;
+        groupedLinks.set(key, (groupedLinks.get(key) || 0) + row.value);
+      });
+
+      const links = Array.from(groupedLinks.entries()).map(([key, value]) => {
+        const [source, target] = key.split("|||");
+        return { source, target, value };
+      });
+
+      const incomeLabels = model.incomeRows.map((row) => String(row.origen).trim());
+      const expenseLabels = model.expenseRows.map((row) => {
+        const source = String(row.origen).trim();
+        const target = String(row.destino).trim();
+        return normalizeLabel(source) === GASTOS_LABEL ? target : source;
+      });
+      const labels = [...new Set([...incomeLabels, INGRESOS_LABEL, ...expenseLabels, GASTOS_LABEL, UTILIDAD_LABEL])];
+      const nodeIndex = Object.fromEntries(labels.map((label, index) => [label, index]));
+
+      const incomeCount = Math.max(incomeLabels.length, 1);
+      const expenseCount = Math.max(expenseLabels.length, 1);
+      const positionMap = {};
+
+      incomeLabels.forEach((label, index) => {
+        positionMap[label] = {
+          x: 0.02,
+          y: incomeCount === 1 ? 0.5 : 0.08 + (0.84 * index) / Math.max(incomeCount - 1, 1)
+        };
+      });
+
+      positionMap[INGRESOS_LABEL] = { x: 0.32, y: 0.5 };
+
+      expenseLabels.forEach((label, index) => {
+        positionMap[label] = {
+          x: 0.66,
+          y: expenseCount === 1 ? 0.5 : 0.08 + (0.84 * index) / Math.max(expenseCount - 1, 1)
+        };
+      });
+
+      positionMap[GASTOS_LABEL] = { x: 0.98, y: 0.22 };
+      positionMap[UTILIDAD_LABEL] = { x: 0.98, y: 0.78 };
+
+      const nodeColors = labels.map((label) => {
+        const normalized = normalizeLabel(label);
+        if (normalized === GASTOS_LABEL) {
+          return "rgba(214, 39, 40, 0.95)";
+        }
+        if (normalized === UTILIDAD_LABEL) {
+          return "rgba(44, 160, 44, 0.95)";
+        }
+        if (normalized === INGRESOS_LABEL) {
+          return "rgba(37, 99, 235, 0.9)";
+        }
+        return "rgba(148, 163, 184, 0.38)";
+      });
+
+      const linkColors = links.map((link) => {
+        const normalizedTarget = normalizeLabel(link.target);
+        if (normalizedTarget === GASTOS_LABEL) {
+          return "rgba(220, 90, 90, 0.35)";
+        }
+        if (normalizedTarget === UTILIDAD_LABEL) {
+          return "rgba(90, 180, 90, 0.35)";
+        }
+        if (normalizedTarget === INGRESOS_LABEL) {
+          return "rgba(59, 130, 246, 0.28)";
+        }
+        return "rgba(148, 163, 184, 0.24)";
+      });
+
+      return {
+        data: [
+          {
+            type: "sankey",
+            arrangement: "snap",
+            node: {
+              label: labels,
+              pad: 22,
+              thickness: 18,
+              color: nodeColors,
+              x: labels.map((label) => positionMap[label]?.x ?? 0.5),
+              y: labels.map((label) => positionMap[label]?.y ?? 0.5),
+              line: { color: "rgba(15, 23, 42, 0.22)", width: 0.6 },
+              hovertemplate: "%{label}<extra></extra>"
+            },
+            link: {
+              source: links.map((link) => nodeIndex[link.source]),
+              target: links.map((link) => nodeIndex[link.target]),
+              value: links.map((link) => link.value),
+              color: linkColors,
+              hovertemplate: "%{source.label} → %{target.label}<br>Monto: %{value:,.0f}<extra></extra>"
+            }
+          }
+        ],
+        layout: {
+          title: { text: "Sankey interactivo de ingresos y gastos" },
+          height: Math.max(700, 90 * Math.max(incomeLabels.length, expenseLabels.length, 5)),
+          margin: { l: 16, r: 16, t: 48, b: 16 },
+          font: { size: 12, family: "Segoe UI, Arial, sans-serif", color: "#0f172a" },
+          paper_bgcolor: "#ffffff",
+          plot_bgcolor: "#ffffff"
+        }
+      };
+    }
+
+    function renderTable() {
+      let displayRows;
+      try {
+        displayRows = prepareModel(state.rows).displayRows;
+      } catch (_) {
+        const { incomeRows, expenseRows, otherRows } = classifyEditableRows(state.rows);
+        displayRows = [
+          ...incomeRows,
+          { origen: INGRESOS_LABEL, destino: GASTOS_LABEL, monto_clp: "—", rowType: "structural-total", stateIndex: null },
+          ...expenseRows,
+          ...otherRows,
+          { origen: GASTOS_LABEL, destino: UTILIDAD_LABEL, monto_clp: "—", rowType: "structural-utility", stateIndex: null }
+        ];
+      }
+
+      tableBody.innerHTML = displayRows
+        .map((row) => {
+          const isStructural = row.stateIndex === null;
+          const rowClass =
+            row.rowType === "income"
+              ? "editable-income"
+              : row.rowType === "expense"
+              ? "editable-expense"
+              : row.rowType === "structural-total"
+              ? "structural"
+              : row.rowType === "structural-utility"
+              ? "structural utility"
+              : "invalid";
+
+          const amountValue = isStructural ? formatCurrency(Number(row.monto_clp) || 0) : String(row.monto_clp ?? "");
+
+          return `
+            <tr class="${rowClass}">
+              <td>
+                ${
+                  isStructural
+                    ? `<input class="field" type="text" value="${escapeAttribute(row.origen)}" disabled>`
+                    : `<input class="field" type="text" data-index="${row.stateIndex}" data-field="origen" value="${escapeAttribute(row.origen)}">`
+                }
+              </td>
+              <td>
+                ${
+                  isStructural
+                    ? `<input class="field" type="text" value="${escapeAttribute(row.destino)}" disabled>`
+                    : `<input class="field" type="text" data-index="${row.stateIndex}" data-field="destino" value="${escapeAttribute(row.destino)}">`
+                }
+              </td>
+              <td class="amount-cell">
+                ${
+                  isStructural
+                    ? `<input class="field" type="text" value="${escapeAttribute(amountValue)}" disabled>`
+                    : `<input class="field" type="text" inputmode="numeric" data-index="${row.stateIndex}" data-field="monto_clp" value="${escapeAttribute(amountValue)}">`
+                }
+              </td>
+              <td>
+                <button
+                  class="delete-button"
+                  type="button"
+                  data-action="delete"
+                  data-index="${row.stateIndex ?? ""}"
+                  ${isStructural ? "disabled" : ""}
+                  aria-label="${isStructural ? "Fila estructural" : "Eliminar fila"}"
+                >
+                  ×
+                </button>
+              </td>
+            </tr>
+          `;
+        })
+        .join("");
+    }
+
+    function renderOutputs() {
+      if (!window.Plotly) {
+        summaryIngresos.textContent = "—";
+        summaryGastos.textContent = "—";
+        summaryUtilidad.textContent = "—";
+        validationMessage.textContent = "No fue posible cargar Plotly.js localmente.";
+        validationMessage.className = "feedback error";
+        return;
+      }
+
+      try {
+        const model = prepareModel(state.rows);
+        const figure = buildSankeyFigure(model);
+        summaryIngresos.textContent = formatCurrency(model.totalIngresos);
+        summaryGastos.textContent = formatCurrency(model.totalGastos);
+        summaryUtilidad.textContent = formatCurrency(model.utilidad);
+        validationMessage.textContent = "Datos válidos. El gráfico y los totales están actualizados.";
+        validationMessage.className = "feedback success";
+        Plotly.react(sankeyChart, figure.data, figure.layout, {
+          responsive: true,
+          displaylogo: false
+        });
+      } catch (error) {
+        summaryIngresos.textContent = "—";
+        summaryGastos.textContent = "—";
+        summaryUtilidad.textContent = "—";
+        validationMessage.textContent = error.message;
+        validationMessage.className = "feedback error";
+        const figure = buildErrorFigure(error.message);
+        Plotly.react(sankeyChart, figure.data, figure.layout, {
+          responsive: true,
+          displaylogo: false
+        });
+      }
+    }
+
+    function render() {
+      renderTable();
+      renderOutputs();
+    }
+
+    document.getElementById("add-income-item").addEventListener("click", () => {
+      state.rows.push({ origen: "nuevo_ingreso", destino: INGRESOS_LABEL, monto_clp: "1" });
+      render();
+    });
+
+    document.getElementById("add-expense-item").addEventListener("click", () => {
+      state.rows.push({ origen: "nuevo_gasto", destino: GASTOS_LABEL, monto_clp: "1" });
+      render();
+    });
+
+    tableBody.addEventListener("input", (event) => {
+      const input = event.target.closest("input[data-index][data-field]");
+      if (!input) {
+        return;
+      }
+
+      const index = Number(input.dataset.index);
+      const field = input.dataset.field;
+      if (!Number.isInteger(index) || !state.rows[index]) {
+        return;
+      }
+
+      state.rows[index][field] = input.value;
+      renderOutputs();
+    });
+
+    tableBody.addEventListener("change", (event) => {
+      const input = event.target.closest("input[data-index][data-field]");
+      if (!input) {
+        return;
+      }
+
+      const index = Number(input.dataset.index);
+      const field = input.dataset.field;
+      if (!Number.isInteger(index) || !state.rows[index]) {
+        return;
+      }
+
+      state.rows[index][field] = input.value.trim() || input.value;
+      render();
+    });
+
+    tableBody.addEventListener("click", (event) => {
+      const button = event.target.closest("button[data-action='delete']");
+      if (!button || button.disabled) {
+        return;
+      }
+
+      const index = Number(button.dataset.index);
+      if (!Number.isInteger(index) || !state.rows[index]) {
+        return;
+      }
+
+      state.rows.splice(index, 1);
+      render();
+    });
+
+    window.addEventListener("resize", () => {
+      if (window.Plotly && sankeyChart) {
+        Plotly.Plots.resize(sankeyChart);
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
