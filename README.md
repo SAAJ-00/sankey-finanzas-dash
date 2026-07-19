@@ -25,7 +25,7 @@ pip install -r requirements.txt
 
 ### 0. Version HTML standalone (sin Python ni servidor)
 
-Abre directamente `index.html` en cualquier navegador moderno.
+Abre directamente `index.html` en cualquier navegador moderno (debes descargar `index.html` y `plotly.min.js`).
 
 Incluye:
 
