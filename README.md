@@ -22,13 +22,15 @@ pip install -r requirements.txt
 
 ## Uso
 
-Sin CSV (usa datos por defecto):
+### 1. Sin CSV (usa datos por defecto):
 
 ```bash
 python sankey_dash_app.py
 ```
 
-Con CSV:
+Luego abre en tu navegador la URL que muestra Dash (normalmente http://127.0.0.1:8050).
+
+### 2. Con CSV:
 
 ```bash
 python sankey_dash_app.py ruta/al/archivo.csv
@@ -36,7 +38,7 @@ python sankey_dash_app.py ruta/al/archivo.csv
 
 Luego abre en tu navegador la URL que muestra Dash (normalmente http://127.0.0.1:8050).
 
-## Formato esperado del CSV
+#### 2.1 Formato esperado del CSV
 
 Debe incluir estas columnas:
 
@@ -49,6 +51,15 @@ Y debe contener nodos equivalentes a:
 - ingresos_totales
 - gastos_totales
 - utilidad_neta
+
+Ejemplo:
+
+| origen           | destino          | monto_clp |
+|:-----------------|:-----------------|:----------|
+| ingreso_1        | ingresos_totales | 12345     |
+| gasto_1          | gastos_totales   | 1234      |
+| ingresos_totales | utilidad_neta    | 123       |
+
 
 ## Estructura
 
